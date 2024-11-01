@@ -1,9 +1,12 @@
 # CloneAllRepos_by_Org
 Script to clone all repos of an Org to a temporary local folder, and optionally, move them to another location.
 
-## How to use
-The EXE and INI file should be put into the same directory!
+## Pre-reqs
+1. The EXE and INI file should be put into the same directory
+2. Since this performs git opeations, git must be installed on the system, and the PATH should be updated for git access
+	* To test, open a command prompt and type "git".  If it finds git and replies with a "usage" response, you are good.  If not, update your enviroment variable to include the location of the git executable in your PATH.
 
+## Instructions
 The basic operation is by first configuring the INI file, and then running the EXE.  If you run it without configuring the INI, it should ask you for the required information (token and org name).  
 
 In v1.0, there is limited error checking on the INI data, so it will fail if it cannot find the INI, the Host URL is incorrect, or you get the Org Name wrong, as some examples.
