@@ -11,13 +11,17 @@ In v1.0, there is limited error checking on the INI data, so it will fail if it 
 ## Configuration File
 The INI files options are:
 
-1. Host
-    * This is the URL where your Org resides (i.e. https://app.copia.io)
-2. Token
+1. **Host**
+    * This is the URL where your Org resides
+	* *Sample Format: https://app.copia.io*
+2. **Token**
     * This is your Personal Access Token (see: https://docs.copia.io/docs/git-based-source-control/getting-started/creating-your-account/migrate#generating-access-tokens)
-3. Organization
+	* *Sample Format: 0c28xda8x981xx98d7415xx2377ea8b5x5dc7cx7*
+3. **Organization**
     * This is the name of the Org that you want to clone all of your repos.
-4. MoveTo
+	* *Sample Format: Cables123*
+4. **MoveTo**
     * Repos will be downloaded to a temporary folder.  By adding an absolute path here, you can move them repos to another location after cloning has been completed.  
     * When using this option, the initial temp location will be deleted after the repos are moved.
     * If the data already exists in the MoveTo location, it will be overwritten (remember, a cloned repo contain the full history, so keeping duplicates is redundant)
+	* *Sample Format: c:\temp\data*
