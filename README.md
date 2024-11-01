@@ -2,6 +2,8 @@
 Script to clone all repos of an Org to a temporary local folder, and optionally, move them to another location.
 
 ## How to use
+The EXE and INI file should be put into the same directory!
+
 The basic operation is by first configuring the INI file, and then running the EXE.  If you run it without configuring the INI, it should ask you for the required information (token and org name).  
 
 In v1.0, there is limited error checking on the INI data, so it will fail if you get the Org Name wrong, as an example.
