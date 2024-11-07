@@ -113,7 +113,7 @@ def main():
         Repo.clone_from(repository["clone_url"], os.path.join(tmp_folder, repository["full_name"]))
         #print(repository["clone_url"]) #for testing
         count_repos += 1
-        if config['DEFAULT']['RepoCount'] > 0:
+        if len(config['DEFAULT']['RepoCount']) > 0:
             break
         
     # Move data to new location if configured in the INI
