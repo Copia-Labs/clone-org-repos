@@ -27,7 +27,7 @@ The INI files options are:
     * This allows you to limit the number of repos you are cloning for testing  
     * It is set to 1 by default for testing
     * Change this value to 0 to clone all repos
-	* *Sample Format: 0
+	* *Sample Format: 0*
 4. **MoveTo**
     * Repos will be downloaded to a temporary folder.  By adding an absolute path here, you can move them repos to another location after cloning has been completed.  
     * When using this option, the initial temp location will be deleted after the repos are moved.
