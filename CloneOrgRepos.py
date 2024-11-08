@@ -111,7 +111,7 @@ def main():
     for repository in repositories:
         print("Cloning " + str(count_repos) + " of " + str(num_repos) + ": " + repository["full_name"] + " into " + tmp_folder)
         url_with_token = repository["clone_url"][:8] + auth_token + "@" + repository["clone_url"][8:] #add token to URL
-        Repo.clone_from(url_with_token, os.path.join(tmp_folder, repository["full_name"]))
+        Repo.clone_from(url_with_token, os.path.join(tmp_folder, repository["full_name"]), depth=1)
         #print(url_with_token) #for testing
         if int(config['DEFAULT']['StopAfter']) > 0 and count_repos == int(config['DEFAULT']['StopAfter']):
             break
