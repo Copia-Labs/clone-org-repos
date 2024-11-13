@@ -1,5 +1,5 @@
 # CloneAllRepos_by_Org
-A Script to perform a shallow clone (*the latest commit*) of all repos of an Org to a pre-defined local folder.  This folder is called "repos" and will be created in the same location in which the script is executed.  The script is configured by an `ini` file, which allows (*among other things*) to move the data to another location.
+A Script to perform a shallow clone (*the latest commit*) of a defined branch of all repos of an Org to a pre-defined local folder.  This folder is called "repos" and will be created in the same location in which the script is executed.  The script is configured by an `ini` file, which allows (*among other things*) to move the data to another location.
 
 #### Notes
 - A shallow clone is performed due to the umber of LFS objects (*i.e. binary files*) that are typically used in a Copia repo.  Downloading all LFS objects for the entire history, for all repos may be very large.
@@ -32,11 +32,15 @@ The INI files options are:
     * It is set to 1 by default for testing
     * Change this value to 0 to clone all repos
 	* *Sample Format: 0*
-4. **MoveTo**
+5. **MoveTo**
     * Repos will be downloaded to a temporary folder called "repos" in the location that the script is executed.  By adding an absolute path here, you can move them repos to another location after cloning has been completed.  
     * When using this option, the initial temp location will be deleted after the repos are moved.
     * If the data already exists in the `MoveTo` location, it will be overwritten (remember, a cloned repo contain the full history, so keeping duplicates is redundant)
 	* *Sample Format: c:\temp\data*
+6. **Branch**
+    * If defined, the script will clone only the defined Branch  
+    * The default for this setting is "main", if undefined it will use "main"
+	* *Sample Format: main*
 
 ## Building an EXE
 This script is written in Python, but releases are made as EXE files.  PyInstaller is used to build the exe, and a `.spec` file is provided, if required.
