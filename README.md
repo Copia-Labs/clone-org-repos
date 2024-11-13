@@ -37,3 +37,6 @@ The INI files options are:
     * When using this option, the initial temp location will be deleted after the repos are moved.
     * If the data already exists in the `MoveTo` location, it will be overwritten (remember, a cloned repo contain the full history, so keeping duplicates is redundant)
 	* *Sample Format: c:\temp\data*
+
+## Building an EXE
+This script is written in Python, but releases are made as EXE files.  PyInstaller is used to build the exe, and a `.spec` file is provided, if required.
