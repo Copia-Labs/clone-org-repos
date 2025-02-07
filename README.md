@@ -1,4 +1,4 @@
-# CloneAllRepos_by_Org
+# clone-org-repos
 A Script to perform a shallow clone (*the latest commit*) of a defined branch of all repos of an Org to a pre-defined local folder.  This folder is called "repos" and will be created in the same location in which the script is executed.  The script is configured by an `ini` file, which allows (*among other things*) to move the data to another location.
 
 #### Notes
