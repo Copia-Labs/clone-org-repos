@@ -11,9 +11,9 @@ A Script to perform a shallow clone (*the latest commit*) of a defined branch of
 	* To test, open a command prompt and type "git".  If it finds git and replies with a "usage" response, you are good.  If not, update your environment variable to include the location of the git executable in your PATH.
 
 ## Instructions
-The basic operation is by first configuring the INI file, and then running the EXE.  If you run it without configuring the INI, it should ask you for the required information (token and org name).  
-
-In v1.0, there is limited error checking on the INI data, so it will fail if it cannot find the INI, the Host URL is incorrect, or you get the Org Name wrong, as some examples.
+- Download the latest release files from the [Releases](https://github.com/Copia-Labs/clone-org-repos/releases) section.  
+- The basic operation is by first configuring the INI file, and then running the EXE.  If you run it without configuring the INI, it should ask you for the required information (token and org name).  
+- There is limited error checking on the INI data, so it will fail if it cannot find the INI, the Host URL is incorrect, or you get the Org Name wrong, as some examples.
 
 ## Configuration File
 The INI files options are:
