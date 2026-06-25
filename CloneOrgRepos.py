@@ -98,12 +98,28 @@ def main():
         org_answer = prompt(org_question)
         selected_org = org_answer['org']
 
-    # Get list of repos for the user/org combo
-    page = 0
+    # Get list of repos for the org (Gitea pages are 1-indexed)
     repositories = []
-    r = requests.get(f"{host}/api/v1/orgs/{selected_org}/repos?limit=3&page={page}&token={auth_token}")
-    repositories =(r.json())
-    
+    page = 1
+    headers = {'Authorization': f'token {auth_token}'}
+    while True:
+        r = requests.get(
+            f"{host}/api/v1/orgs/{selected_org}/repos",
+            params={'limit': 50, 'page': page},
+            headers=headers,
+        )
+        if r.status_code != 200:
+            print(f"Error retrieving repos ({r.status_code}): {r.text}")
+            sys.exit(1)
+        batch = r.json()
+        if not isinstance(batch, list):
+            print(f"Unexpected response (not a list): {batch}")
+            sys.exit(1)
+        if not batch:          # empty page = we're done
+            break
+        repositories.extend(batch)
+        page += 1
+
     num_repos = len(repositories)
     count_repos = 1
     repobranch = config['DEFAULT']['Branch']
