@@ -1,0 +1,36 @@
+[DEFAULT]
+# Origin URL of your Copia / Gitea instance
+Host = https://app.copia.io
+
+# Personal access token. Leave blank to be prompted (CLI) or to type it in the GUI.
+# Only written back to this file if you enable "Remember token".
+# When saved, it is encrypted with Windows DPAPI (tied to your Windows user
+# account) and stored as "enc:dpapi:...". A plaintext value here also works and
+# will be re-encrypted the next time settings are saved.
+Token =
+
+# Organization to clone. Leave blank to be prompted / auto-selected.
+Organization =
+
+# Branch to clone. Leave blank to clone each repo's default branch.
+Branch =
+
+# Directory the repos are cloned into.
+Target =
+
+# Number of repositories to clone in parallel.
+Workers = 4
+
+# History depth: full | shallow
+#   shallow = latest commit only (fast, default)
+#   full    = complete history
+History = shallow
+
+# Clone only the first N repos (0 = all). Handy for testing.
+StopAfter = 0
+
+# Whether the GUI persists the token to this file.
+RememberToken = false
+
+# Write a timestamped log file next to the app.
+LogToFile = false

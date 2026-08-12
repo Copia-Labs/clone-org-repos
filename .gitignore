@@ -1,0 +1,31 @@
+# --- Secrets / user-specific config -------------------------------------
+# The INI can hold your (encrypted) token, org name and local paths once you
+# use "Remember token" or "Make Scheduler Script". Keep the real one out of git.
+clone_org_repos.ini
+
+# Auto-generated scheduler scripts contain your org name and local paths.
+run_clone.bat
+run_clone.ps1
+
+# Run logs list org and repository names.
+clone_log_*.txt
+
+# --- Cloned output ------------------------------------------------------
+# Never commit repositories the tool downloads.
+repos/
+/repos/
+
+# --- Build artifacts ----------------------------------------------------
+build/
+dist/
+*.spec.bak
+__pycache__/
+*.pyc
+*.pyo
+
+# --- OS / editor cruft --------------------------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
