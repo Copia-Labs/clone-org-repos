@@ -1,46 +1,153 @@
-# clone-org-repos
-A Script to perform a shallow clone (*the latest commit*) of a defined branch of all repos of an Org to a pre-defined local folder.  This folder is called "repos" and will be created in the same location in which the script is executed.  The script is configured by an `ini` file, which allows (*among other things*) to move the data to another location.
+# Copia Org Repo Cloner
 
-#### Notes
-- A shallow clone is performed due to the umber of LFS objects (*i.e. binary files*) that are typically used in a Copia repo.  Downloading all LFS objects for the entire history, for all repos may be very large.
-- If your goal is to have a backup of the Copia data, mirroring your data to GitHub, Gitlab or Azure may be another way to accomplish this.
+Clone every repository in a Copia (Gitea-based) organization — with a friendly
+**Tkinter GUI**, a full **command-line interface**, and one-command **EXE**
+packaging.
 
-## Pre-Reqs
-1. The EXE and INI file should be put into the same directory
-2. Since this performs git operations, git must be installed on the system, and the PATH should be updated for git access
-	* To test, open a command prompt and type "git".  If it finds git and replies with a "usage" response, you are good.  If not, update your environment variable to include the location of the git executable in your PATH.
+This is a rewrite of the original `CloneOrgRepos.py` script.
 
-## Instructions
-- Download the latest release files from the [Releases](https://github.com/Copia-Labs/clone-org-repos/releases) section.  
-- The basic operation is by first configuring the INI file, and then running the EXE.  If you run it without configuring the INI, it should ask you for the required information (token and org name).  
-- There is limited error checking on the INI data, so it will fail if it cannot find the INI, the Host URL is incorrect, or you get the Org Name wrong, as some examples.
+---
 
-## Configuration File
-The INI files options are:
+## What's new vs. the original
 
-1. **Host**
-    * This is the URL where your Org resides
-	* *Sample Format: https://app.copia.io*
-2. **Token**
-    * This is your Personal Access Token (see: https://docs.copia.io/docs/git-based-source-control/getting-started/creating-your-account/migrate#generating-access-tokens)
-	* *Sample Format: 0c28xda8x981xx98d7415xx2377ea8b5x5dc7cx7*
-3. **Organization**
-    * This is the name of the Org that you want to clone all of your repos.
-	* *Sample Format: Cables123*
-4. **StopAfter**
-    * This allows you to limit the number of repos you are cloning for testing  
-    * It is set to 1 by default for testing
-    * Change this value to 0 to clone all repos
-	* *Sample Format: 0*
-5. **MoveTo**
-    * Repos will be downloaded to a temporary folder called "repos" in the location that the script is executed.  By adding an absolute path here, you can move them repos to another location after cloning has been completed.  
-    * When using this option, the initial temp location will be deleted after the repos are moved.
-    * If the data already exists in the `MoveTo` location, it will be overwritten (remember, a cloned repo contain the full history, so keeping duplicates is redundant)
-	* *Sample Format: c:\temp\data*
-6. **Branch**
-    * If defined, the script will clone only the defined Branch  
-    * The default for this setting is "main", if undefined it will use "main"
-	* *Sample Format: main*
+| Area | Original | This version |
+|------|----------|--------------|
+| Interface | Terminal prompts (InquirerPy) | GUI **and** CLI |
+| Settings | INI only | GUI fields + INI + CLI flags |
+| Target dir | INI `MoveTo`, temp-folder shuffle | Direct target dir picker |
+| Progress | `print` per repo | Live scrollable log **+** % progress bar |
+| Speed | Sequential | Parallel (adjustable worker count) |
+| History | Hard-coded `depth=1` | **shallow** (latest commit) or **full** (all history) |
+| Branch | Hard-coded `main` fallback | Blank = each repo's default branch |
+| Errors | One failure stops the run | Per-repo error handling + summary |
+| Token in URL | Assumes `https://` | Robust URL parsing; token scrubbed from logs |
+| Packaging | — | PyInstaller `.exe` (script + spec) |
 
-## Building an EXE
-This script is written in Python, but releases are made as EXE files.  PyInstaller is used to build the exe, and a `.spec` file is provided, if required.
+---
+
+## Install & run (from source)
+
+```bash
+pip install -r requirements.txt
+
+# Launch the GUI (default)
+python clone_org_repos.py
+
+# Headless / scripted
+python clone_org_repos.py --cli --org my-org --target C:\repos --workers 6
+```
+
+`tkinter` ships with the standard Windows/macOS Python installers. On Linux you
+may need `sudo apt install python3-tk`.
+
+---
+
+## GUI
+
+1. **Origin URL** – defaults to `https://app.copia.io`.
+2. **Auth token** – paste your Copia personal token (Show toggles visibility).
+3. **Organization** – type it, or click **Fetch** to list the orgs your token
+   can see and pick from the dropdown.
+4. **Branch** – leave blank to clone each repo's default branch.
+5. **Target directory** – **Browse…** to pick where repos land
+   (they're placed under `target/<org>/<repo>`).
+6. **Options**
+   - **Workers** – how many repos to clone at once.
+   - **History** – `shallow` (latest commit only, fast) or `full` (all history).
+   - **Stop after** – clone only the first N repos (0 = all); great for testing.
+   - **Remember token** – persist the token to the INI (encrypted — off by default).
+   - **Write log file** – also save a timestamped `.txt` log next to the app.
+7. **Start Cloning** streams progress into the scrollable log and drives the
+   progress bar. **Cancel** stops scheduling new clones (in-flight ones finish).
+   **Save Settings**, **Open Target**, **Open Log Folder**, and **Clear Log** do
+   what they say (Open Log Folder opens the folder where the app and its log
+   files live).
+
+---
+
+## Command line
+
+```
+python clone_org_repos.py [options]
+
+  --cli                 Run headless (no GUI)
+  --gui                 Force the GUI
+  --config PATH         INI file to read/write (default: next to the app)
+  --host URL            Origin URL (default https://app.copia.io)
+  --token TOKEN         Auth token (prompted securely if omitted in --cli)
+  --org NAME            Organization to clone
+  --branch NAME         Branch (blank = repo default)
+  --target DIR          Where to clone
+  --workers N           Parallel clones
+  --history {full,shallow}
+  --stop-after N        Clone only the first N repos (0 = all)
+  --log-to-file         Also write a timestamped log file
+  --list-orgs           List orgs your token can see, then exit
+  --save-config         Save resulting settings to the config file
+  --remember-token      With --save-config, also persist the token (plaintext!)
+```
+
+Precedence is **CLI flag → config file → built-in default**, so you can keep a
+base `clone_org_repos.ini` and override per run.
+
+Examples:
+
+```bash
+# See which orgs you belong to
+python clone_org_repos.py --cli --token XXXX --list-orgs
+
+# Full-history clone of one org into a folder, 8 at a time
+python clone_org_repos.py --cli --org acme --history full --workers 8 --target D:\backup
+
+# Shallow clone (latest commit only) and remember settings (token encrypted)
+python clone_org_repos.py --cli --org acme --history shallow --save-config --remember-token
+```
+
+Exit codes: `0` success · `1` fatal/setup error · `3` finished but some repos failed.
+
+---
+
+## Build a Windows EXE
+
+On a Windows machine with Python installed:
+
+```bat
+build_exe.bat
+```
+
+…or manually:
+
+```bat
+pip install -r requirements.txt pyinstaller
+pyinstaller CopiaRepoCloner.spec
+```
+
+The executable appears at `dist\CopiaRepoCloner.exe`. Drop
+`clone_org_repos.ini` next to it if you want saved settings to travel with it.
+
+> **Note:** `git` must be installed on the machine running the EXE — GitPython
+> shells out to the system `git`. On a locked-down box, install
+> [Git for Windows](https://git-scm.com/download/win).
+
+---
+
+## Security note
+
+The token is treated as a secret: it's hidden in the GUI, prompted with
+`getpass` on the CLI, scrubbed out of any error text, and **never** written to
+the INI unless you explicitly opt in with "Remember token" / `--remember-token`.
+
+When you do save it, it is **encrypted at rest**:
+
+- **Windows:** encrypted with **DPAPI** (`CryptProtectData`) and stored as
+  `Token = enc:dpapi:...`. The ciphertext is bound to your Windows user
+  account, so the INI is useless if copied to another user or machine — if
+  that happens, the app just warns and asks you to re-enter the token. No
+  password or key file to manage, and no extra dependencies (it's called
+  through `ctypes`).
+- **Other OSes (fallback):** stored as `enc:obf:...` using lightweight XOR
+  obfuscation. This is **not** real encryption — it only stops casual
+  shoulder-surfing. Prefer not saving the token on shared machines.
+
+A plaintext token typed straight into the INI still works and gets
+re-encrypted the next time settings are saved.
