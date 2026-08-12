@@ -10,6 +10,8 @@ Repositories are listed through the official **Copia public API (v1)**
 
 This is a rewrite of the original `CloneOrgRepos.py` script.
 
+<img width="811" height="431" alt="image" src="https://github.com/user-attachments/assets/142e1a06-78c3-499a-9d0a-b7f7233fb1d7" />
+
 ---
 
 ## What's new vs. the original
