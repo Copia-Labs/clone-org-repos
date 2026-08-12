@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """
-Copia / Gitea Organization Repo Cloner
-======================================
+Copia Organization Repo Cloner
+==============================
 
-Clone every repository in a Copia (Gitea-based) organization, with either a
-Tkinter GUI or a headless command-line interface. Designed to be packaged into
-a single Windows .exe with PyInstaller.
+Clone every repository in a Copia organization, with either a Tkinter GUI or a
+headless command-line interface. Designed to be packaged into a single Windows
+.exe with PyInstaller.
+
+Uses the official Copia public API (v1): repositories are listed via
+GET {host}/public/api/v1/orgs/{org}/repos with an `Authorization: Bearer
+{token}` header; each repo is then cloned over git-over-HTTPS.
 
 Features
 --------
@@ -334,35 +338,47 @@ class CloneEngine:
     def _host(self):
         return self.s.get("Host", DEFAULT_HOST).strip().rstrip("/") or DEFAULT_HOST
 
+    def _api_base(self):
+        """Base URL of the Copia public API (v1)."""
+        return f"{self._host()}/public/api/v1"
+
     def _headers(self):
-        return {"Authorization": f"token {self.s['Token']}"}
+        # Copia public API authenticates with a Bearer token.
+        return {
+            "Authorization": f"Bearer {self.s['Token']}",
+            "Accept": "application/json",
+        }
 
     def _auth_url(self, clone_url):
-        """Insert the token into the clone URL as basic-auth userinfo."""
+        """Insert the token into a git clone URL as basic-auth userinfo."""
         p = urlparse(clone_url)
         netloc = f"{self.s['Token']}@{p.hostname}"
         if p.port:
             netloc += f":{p.port}"
         return urlunparse((p.scheme, netloc, p.path, p.params, p.query, p.fragment))
 
-    # -- API calls --------------------------------------------------------- #
-    def list_orgs(self):
-        """Return list of org usernames the token can see (raises on error)."""
-        url = f"{self._host()}/api/v1/user/orgs"
-        r = requests.get(url, headers=self._headers(), timeout=30)
-        r.raise_for_status()
-        return [o["username"] for o in r.json()]
+    def _clone_url_for(self, repo):
+        """The public API returns no clone_url, so build it from full_name."""
+        full_name = repo.get("full_name") or repo.get("name", "")
+        return f"{self._host()}/{full_name}.git"
 
+    # -- API calls --------------------------------------------------------- #
     def list_repos(self, org):
-        """Return all repo objects for an org, following Gitea's paging."""
+        """Return all repo objects for an org via the public API.
+
+        The public API wraps results as {"data": [...], "total_count": N} and
+        pages are 1-based. We read tolerantly: unknown fields are ignored and
+        we stop when a page returns no data.
+        """
         repos = []
         page = 1
+        limit = 50
         while True:
             if self.cancelled():
                 break
             r = requests.get(
-                f"{self._host()}/api/v1/orgs/{org}/repos",
-                params={"limit": 50, "page": page},
+                f"{self._api_base()}/orgs/{org}/repos",
+                params={"limit": limit, "page": page},
                 headers=self._headers(),
                 timeout=60,
             )
@@ -370,12 +386,19 @@ class CloneEngine:
                 raise RuntimeError(
                     f"Error retrieving repos ({r.status_code}): {r.text[:300]}"
                 )
-            batch = r.json()
-            if not isinstance(batch, list):
-                raise RuntimeError(f"Unexpected response (not a list): {batch}")
+            payload = r.json()
+            # Public API => {"data": [...]}. Be tolerant if a bare list appears.
+            if isinstance(payload, dict):
+                batch = payload.get("data", [])
+            elif isinstance(payload, list):
+                batch = payload
+            else:
+                raise RuntimeError(f"Unexpected response: {str(payload)[:300]}")
             if not batch:
                 break
             repos.extend(batch)
+            if len(batch) < limit:   # last (partial) page
+                break
             page += 1
         return repos
 
@@ -431,7 +454,7 @@ class CloneEngine:
         if self.cancelled():
             return ("cancelled", name, "cancelled before start")
         dest = os.path.join(target, name)
-        url = self._auth_url(repo["clone_url"])
+        url = self._auth_url(self._clone_url_for(repo))
         kwargs = self._clone_kwargs()
         try:
             self._attempt_clone(url, dest, kwargs)
@@ -470,24 +493,13 @@ class CloneEngine:
         org = self.s.get("Organization", "").strip()
         target = os.path.abspath(self.s.get("Target", "").strip() or os.getcwd())
 
-        try:
-            # Resolve org if not specified.
-            if not org:
-                self.log("No organization set - looking up your organizations...")
-                orgs = self.list_orgs()
-                if not orgs:
-                    self.log("ERROR: No organizations found for this token.")
-                    return {"ok": 0, "fail": 0, "total": 0, "cancelled": True}
-                if len(orgs) == 1:
-                    org = orgs[0]
-                    self.log(f"Using the only organization available: {org}")
-                else:
-                    self.log("ERROR: Multiple organizations found; please set one: "
-                             + ", ".join(orgs))
-                    return {"ok": 0, "fail": 0, "total": 0, "cancelled": True,
-                            "orgs": orgs}
+        if not org:
+            self.log("ERROR: No organization set. Enter the organization name "
+                     "(the public API is organization-scoped).")
+            return {"ok": 0, "fail": 0, "total": 0, "cancelled": True}
 
-            self.log(f"Host:   {self._host()}")
+        try:
+            self.log(f"API:    {self._api_base()}")
             self.log(f"Org:    {org}")
             self.log(f"Target: {target}")
             self.log("Fetching repository list...")
@@ -600,8 +612,6 @@ def build_arg_parser():
                    help="Clone only the first N repos (0 = all).")
     p.add_argument("--log-to-file", action="store_true",
                    help="Also write the run log to a timestamped text file.")
-    p.add_argument("--list-orgs", action="store_true",
-                   help="Just list the organizations your token can see, then exit.")
     p.add_argument("--save-config", action="store_true",
                    help="Save the resulting settings to the config file.")
     p.add_argument("--remember-token", action="store_true",
@@ -637,15 +647,6 @@ def run_cli(args):
             return 2
 
     engine = CloneEngine(cfg, log=lambda m: print(m))
-
-    if args.list_orgs:
-        try:
-            for name in engine.list_orgs():
-                print(name)
-            return 0
-        except Exception as exc:  # noqa: BLE001
-            print(f"Error listing orgs: {exc}", file=sys.stderr)
-            return 1
 
     # Simple textual progress bar on a single line.
     state = {"last": ""}
@@ -739,22 +740,8 @@ def run_gui(initial_cfg=None, config_path=None):
 
     row += 1
     ttk.Label(frm, text="Organization:").grid(row=row, column=0, sticky="w", **pad)
-    org_combo = ttk.Combobox(frm, textvariable=v_org)
-    org_combo.grid(row=row, column=1, columnspan=2, sticky="ew", **pad)
-
-    def fetch_orgs():
-        try:
-            eng = CloneEngine(collect_settings())
-            names = eng.list_orgs()
-            org_combo["values"] = names
-            if names and not v_org.get():
-                v_org.set(names[0])
-            append_log(f"Found organizations: {', '.join(names) if names else '(none)'}")
-        except Exception as exc:  # noqa: BLE001
-            messagebox.showerror(APP_NAME, f"Could not fetch organizations:\n{exc}")
-
-    ttk.Button(frm, text="Fetch", command=fetch_orgs).grid(
-        row=row, column=3, sticky="ew", **pad)
+    ttk.Entry(frm, textvariable=v_org).grid(row=row, column=1, columnspan=3,
+                                            sticky="ew", **pad)
 
     row += 1
     ttk.Label(frm, text="Branch:").grid(row=row, column=0, sticky="w", **pad)
@@ -1093,8 +1080,8 @@ def run_gui(initial_cfg=None, config_path=None):
 def main(argv=None):
     args = build_arg_parser().parse_args(argv)
 
-    # Decide GUI vs CLI. --gui always wins; --cli / --list-orgs force CLI.
-    force_cli = args.cli or args.list_orgs
+    # Decide GUI vs CLI. --gui always wins; --cli forces CLI.
+    force_cli = args.cli
     if args.gui:
         run_gui(config_path=args.config)
         return 0

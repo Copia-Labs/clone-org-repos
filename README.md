@@ -1,8 +1,12 @@
 # Copia Org Repo Cloner
 
-Clone every repository in a Copia (Gitea-based) organization — with a friendly
+Clone every repository in a Copia organization — with a friendly
 **Tkinter GUI**, a full **command-line interface**, and one-command **EXE**
 packaging.
+
+Repositories are listed through the official **Copia public API (v1)**
+(`{host}/public/api/v1/orgs/{org}/repos`, authenticated with an
+`Authorization: Bearer {token}` header) and then cloned over git-over-HTTPS.
 
 This is a rewrite of the original `CloneOrgRepos.py` script.
 
@@ -46,8 +50,8 @@ may need `sudo apt install python3-tk`.
 
 1. **Origin URL** – defaults to `https://app.copia.io`.
 2. **Auth token** – paste your Copia personal token (Show toggles visibility).
-3. **Organization** – type it, or click **Fetch** to list the orgs your token
-   can see and pick from the dropdown.
+3. **Organization** – type the organization name. (Required — the public API
+   is organization-scoped.)
 4. **Branch** – leave blank to clone each repo's default branch.
 5. **Target directory** – **Browse…** to pick where repos land
    (they're placed under `target/<org>/<repo>`).
@@ -82,7 +86,6 @@ python clone_org_repos.py [options]
   --history {full,shallow}
   --stop-after N        Clone only the first N repos (0 = all)
   --log-to-file         Also write a timestamped log file
-  --list-orgs           List orgs your token can see, then exit
   --save-config         Save resulting settings to the config file
   --remember-token      With --save-config, also persist the token (plaintext!)
 ```
@@ -93,9 +96,6 @@ base `clone_org_repos.ini` and override per run.
 Examples:
 
 ```bash
-# See which orgs you belong to
-python clone_org_repos.py --cli --token XXXX --list-orgs
-
 # Full-history clone of one org into a folder, 8 at a time
 python clone_org_repos.py --cli --org acme --history full --workers 8 --target D:\backup
 
