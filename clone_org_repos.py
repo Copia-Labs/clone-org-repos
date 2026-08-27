@@ -181,6 +181,24 @@ DEFAULTS = {
 }
 
 
+def _ensure_std_streams():
+    """Guarantee sys.stdout / sys.stderr exist and are writable.
+
+    When the app runs with no console attached -- a PyInstaller --windowed
+    build (console=False), or ANY build launched by Windows Task Scheduler
+    without a console -- Python sets sys.stdout / sys.stderr to None. Code that
+    writes to them directly (e.g. the CLI progress bar's sys.stdout.write) then
+    crashes with "'NoneType' object has no attribute 'write'". Point the missing
+    streams at os.devnull so those writes become harmless no-ops.
+    """
+    for _name in ("stdout", "stderr"):
+        if getattr(sys, _name, None) is None:
+            try:
+                setattr(sys, _name, open(os.devnull, "w", encoding="utf-8"))
+            except Exception:
+                pass
+
+
 def base_dir():
     """Directory the app lives in (works for both script and frozen .exe)."""
     if getattr(sys, "frozen", False):
@@ -652,7 +670,7 @@ def run_cli(args):
     state = {"last": ""}
 
     def progress(done, total):
-        if not total:
+        if not total or sys.stdout is None:
             return
         pct = int(done * 100 / total)
         bar_len = 30
@@ -1078,6 +1096,11 @@ def run_gui(initial_cfg=None, config_path=None):
 #  Entry point
 # --------------------------------------------------------------------------- #
 def main(argv=None):
+    # Make stdout/stderr safe BEFORE anything can write to them. Without this a
+    # windowed exe (console=False) or a Task Scheduler run has sys.stdout=None,
+    # and the CLI progress bar dies with "'NoneType' object has no attribute
+    # 'write'".
+    _ensure_std_streams()
     args = build_arg_parser().parse_args(argv)
 
     # Decide GUI vs CLI. --gui always wins; --cli forces CLI.
